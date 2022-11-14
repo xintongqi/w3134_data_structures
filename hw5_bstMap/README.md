@@ -1,4 +1,4 @@
-NOTE:
+# NOTE:
 
 I made a mistake in this assignment: I did not update the parent pointers accordingly, which resulted in a terrible, terrible disaster when it came to removal
 
