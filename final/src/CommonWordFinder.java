@@ -8,10 +8,13 @@ import java.util.Iterator;
  * @version 1.0.1 December 12, 2022
  */
 public class CommonWordFinder {
+    private static int limit = 10; // set to 10 by default
+    private static Pair<String, Integer>[] words; // array to store the words
 
     /**
      * Main method: the entry point of the common word finder project
-     * TODO: more descriptions here
+     * This program uses one of the three data structures bst|avl|hash to locate
+     * the most common words in a text file and list them out
      * @param args an array of strings in the format of filename bst|avl|hash [limit]
      */
     public static void main(String[] args) {
@@ -33,7 +36,6 @@ public class CommonWordFinder {
             System.exit(1);
         }
 
-        int limit = 10; // set to 10 by default
         if (args.length == 3) { // invalid limit
             try {
                 limit = Integer.parseInt(args[2]);
@@ -48,9 +50,9 @@ public class CommonWordFinder {
             System.exit(1);
         }
 
-        /* parse input file */
+        /* process input */
         MyMap<String, Integer> myMap = null;
-        BufferedReader reader = null;
+        BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(file));
             if (args[1].equals("bst")) {
@@ -62,64 +64,117 @@ public class CommonWordFinder {
             }
 
             String line;
+            StringBuilder sb = new StringBuilder();
             while ((line = reader.readLine()) != null) {
-                String[] segments = line.split(" ");
-                for (String segment : segments) {
-                    if (segment.charAt(0) == '-') // invalid, skip
-                        continue;
-                    if (!Character.isLetterOrDigit(segment.charAt(segment.length()-1))) // remove punctuation
-                        segment = segment.substring(0, segment.length()-1);
-                    segment = segment.toLowerCase();
-
-                    // insert words one by one
-                    Integer value = myMap.put(segment, 1);
-                    if (value != null)
-                        myMap.put(segment, value+1);
+                sb.setLength(0);
+                for (int i = 0; i < line.length(); i++) {
+                    char c = line.charAt(i);
+                    if (Character.isLetter(c) || c=='-' || c=='\'')
+                        sb.append(c);
+                    if (Character.isWhitespace(c) || i == line.length()-1) {
+                        String s = sb.toString().toLowerCase();
+                        while (s.length() > 0 && s.charAt(0) == '-') // remove all leading -
+                            s = s.substring(1);
+                        if (s.length()<1)
+                            continue;
+                        Integer val = myMap.put(s, 1);
+                        if (val != null) {
+                            myMap.put(s, val+1);
+                        }
+                        sb.setLength(0);
+                    }
                 }
             }
-
             reader.close();
         } catch (IOException e) { // I/O error during input processing
-            System.err.println("Error: An I/O error occurred reading '" + args[0] + "'.");
+            System.err.println("Error: An I/O error occurred reading '" + args[1] + "'.");
             System.exit(1);
+        }
+        if (limit > myMap.size()) // not so many unique words
+            limit = myMap.size();
+
+        /* construct array */
+        words = new Pair[myMap.size()];
+        int maxstrlen = -1; // keep track of the longest string
+        if (args[1].equals("bst")) { // bst: inorder, then sort according to values
+            String s =  ((BSTMap<String, Integer>)myMap).toString();
+            StringBuilder sbw = new StringBuilder();
+            StringBuilder sbd = new StringBuilder();
+            int count = 0;
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (Character.isDigit(c))
+                    sbd.append(c);
+                if (Character.isLetter(c) || c=='\'' || c=='-')
+                    sbw.append(c);
+                if (!sbd.isEmpty() && c == '>') { // digit
+                    words[count].value = Integer.valueOf(sbd.toString());
+                    count++;
+                    sbd.setLength(0);
+                }
+                if (!sbw.isEmpty() && c == ',') { // letter
+                    words[count] = new Pair<>(sbw.toString(), -1);
+                    if (sbw.toString().length() > maxstrlen)
+                        maxstrlen = sbw.toString().length();
+                    sbw.setLength(0);
+                }
+            }
+            // sorting comes from these sources
+            // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/util/Arrays.html#sort(java.lang.Object%5B%5D)
+            // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/lang/Comparable.html
+            // https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html
+            // https://www.baeldung.com/java-sorting
+            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
+        } else if (args[1].equals("avl")) { // avl: similar to bst
+            String s =  ((AVLTreeMap<String, Integer>)myMap).toString();
+            StringBuilder sbw = new StringBuilder();
+            StringBuilder sbd = new StringBuilder();
+            int count = 0;
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (Character.isDigit(c))
+                    sbd.append(c);
+                if (Character.isLetter(c) || c=='\'' || c=='-')
+                    sbw.append(c);
+                if (!sbd.isEmpty() && c == '>') { // digit
+                    words[count].value = Integer.valueOf(sbd.toString());
+                    count++;
+                    sbd.setLength(0);
+                }
+                if (!sbw.isEmpty() && c == ',') { // letter
+                    words[count] = new Pair<>(sbw.toString(), -1);
+                    if (sbw.toString().length() > maxstrlen)
+                        maxstrlen = sbw.toString().length();
+                    sbw.setLength(0);
+                }
+            }
+            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
+        } else { // hash: sort according to keys, then values
+            Iterator<Entry<String, Integer>> iter = myMap.iterator();
+            int count=0;
+            while (iter.hasNext()) {
+                Entry<String, Integer> item = iter.next();
+                words[count] = new Pair<>(item.key, item.value);
+                if (words[count].key.length() > maxstrlen)
+                    maxstrlen = words[count].key.length();
+                count++;
+            }
+            Arrays.sort(words, (a,b) -> a.key.compareTo(b.key));
+            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
         }
 
         /* output result */
-        
-
-
-
-        // todo: testing purposes, remove afterwards
-        if (args[1].equals("bst")) {
-            BSTMap<String, Integer> bst = (BSTMap<String, Integer>) myMap;
-            System.out.println(bst.toAsciiDrawing());
-            System.out.println();
-            System.out.println("Height:                   " + bst.height());
-            System.out.println("Total nodes:              " + bst.size());
-            System.out.printf("Successful search cost:   %.3f\n",
-                    bst.successfulSearchCost());
-            System.out.printf("Unsuccessful search cost: %.3f\n",
-                    bst.unsuccessfulSearchCost());
-        } else if (args[1].equals("avl")) {
-            AVLTreeMap<String, Integer> avlTree = (AVLTreeMap<String, Integer>) myMap;
-            System.out.println(avlTree.toAsciiDrawing());
-            System.out.println();
-            System.out.println("Height:                   " + avlTree.height());
-            System.out.println("Total nodes:              " + avlTree.size());
-            System.out.printf("Successful search cost:   %.3f\n",
-                    avlTree.successfulSearchCost());
-            System.out.printf("Unsuccessful search cost: %.3f\n",
-                    avlTree.unsuccessfulSearchCost());
-        } else {
-            MyHashMap<String, Integer> map = (MyHashMap<String, Integer>) myMap;
-            System.out.println("Size            : " + map.size());
-            System.out.println("Table size      : " + map.getTableSize());
-            System.out.println("Load factor     : " + map.getLoadFactor());
-            System.out.println("Max chain length: " + map.computeMaxChainLength());
-            System.out.println();
-            System.out.println(map);
+        System.out.println("Total unique words: " + myMap.size());
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < limit; i++) {
+            stringBuilder.setLength(0);
+            for (int j = 0; j < String.valueOf(limit).length()-String.valueOf(i+1).length(); j++)
+                stringBuilder.append(" ");
+            stringBuilder.append((i+1) + ". " + words[i].key);
+            for (int j = 0; j < maxstrlen - words[i].key.length() + 1; j++)
+                stringBuilder.append(" ");
+            stringBuilder.append(words[i].value + System.lineSeparator());
+            System.out.print(stringBuilder);
         }
-
-
     }
 }
