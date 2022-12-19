@@ -94,74 +94,25 @@ public class CommonWordFinder {
             limit = myMap.size();
 
         /* construct array */
+        // sorting comes from these sources
+        // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/util/Arrays.html#sort(java.lang.Object%5B%5D)
+        // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/lang/Comparable.html
+        // https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html
+        // https://www.baeldung.com/java-sorting
         words = new Pair[myMap.size()];
         int maxstrlen = -1; // keep track of the longest string
-        if (args[1].equals("bst")) { // bst: inorder, then sort according to values
-            String s =  ((BSTMap<String, Integer>)myMap).toString();
-            StringBuilder sbw = new StringBuilder();
-            StringBuilder sbd = new StringBuilder();
-            int count = 0;
-            for (int i = 0; i < s.length(); i++) {
-                char c = s.charAt(i);
-                if (Character.isDigit(c))
-                    sbd.append(c);
-                if (Character.isLetter(c) || c=='\'' || c=='-')
-                    sbw.append(c);
-                if (!sbd.isEmpty() && c == '>') { // digit
-                    words[count].value = Integer.valueOf(sbd.toString());
-                    count++;
-                    sbd.setLength(0);
-                }
-                if (!sbw.isEmpty() && c == ',') { // letter
-                    words[count] = new Pair<>(sbw.toString(), -1);
-                    if (sbw.toString().length() > maxstrlen)
-                        maxstrlen = sbw.toString().length();
-                    sbw.setLength(0);
-                }
-            }
-            // sorting comes from these sources
-            // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/util/Arrays.html#sort(java.lang.Object%5B%5D)
-            // https://docs.oracle.com/en/java/javase/12/docs/api/java.base/java/lang/Comparable.html
-            // https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html
-            // https://www.baeldung.com/java-sorting
-            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
-        } else if (args[1].equals("avl")) { // avl: similar to bst
-            String s =  ((AVLTreeMap<String, Integer>)myMap).toString();
-            StringBuilder sbw = new StringBuilder();
-            StringBuilder sbd = new StringBuilder();
-            int count = 0;
-            for (int i = 0; i < s.length(); i++) {
-                char c = s.charAt(i);
-                if (Character.isDigit(c))
-                    sbd.append(c);
-                if (Character.isLetter(c) || c=='\'' || c=='-')
-                    sbw.append(c);
-                if (!sbd.isEmpty() && c == '>') { // digit
-                    words[count].value = Integer.valueOf(sbd.toString());
-                    count++;
-                    sbd.setLength(0);
-                }
-                if (!sbw.isEmpty() && c == ',') { // letter
-                    words[count] = new Pair<>(sbw.toString(), -1);
-                    if (sbw.toString().length() > maxstrlen)
-                        maxstrlen = sbw.toString().length();
-                    sbw.setLength(0);
-                }
-            }
-            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
-        } else { // hash: sort according to keys, then values
-            Iterator<Entry<String, Integer>> iter = myMap.iterator();
-            int count=0;
-            while (iter.hasNext()) {
-                Entry<String, Integer> item = iter.next();
-                words[count] = new Pair<>(item.key, item.value);
-                if (words[count].key.length() > maxstrlen)
-                    maxstrlen = words[count].key.length();
-                count++;
-            }
-            Arrays.sort(words, (a,b) -> a.key.compareTo(b.key));
-            Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
+        Iterator<Entry<String, Integer>> iter = myMap.iterator();
+        int count=0;
+        while (iter.hasNext()) {
+            Entry<String, Integer> item = iter.next();
+            words[count] = new Pair<>(item.key, item.value);
+            if (words[count].key.length() > maxstrlen)
+                maxstrlen = words[count].key.length();
+            count++;
         }
+        if (args[1].equals("hash"))
+            Arrays.sort(words, (a,b) -> a.key.compareTo(b.key));
+        Arrays.sort(words, (a,b) -> b.value.compareTo(a.value));
 
         /* output result */
         System.out.println("Total unique words: " + myMap.size());

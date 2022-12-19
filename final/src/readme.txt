@@ -51,4 +51,12 @@ thus sorting the array in hash twice won't really have a great impact on the ove
 technically it should be theta(1) for each rotation
 but the time consumed piles up when rotations become frequent
 3. bst is quite balanced
+so we don't need to worry about the case when the tree branch is super long
+
+Actually it turns out the order given above is not fixed either.
+Sometimes avl will be quite fast, even faster than hash.
+So my final comment on this is, choice of data structures is only part of the consideration,
+there's so much more to consider: implementation, machine, etc.
+
+Really enjoyed the course. Huge thanks to the teaching team, especially the TAs. You're amazing!
 
